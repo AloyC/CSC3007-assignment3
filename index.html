@@ -95,6 +95,7 @@
                 .data(data[0].features)
                 .enter()
                 .append("path")
+                .style("fill", colorScale)
                 .attr("d", geopath)
                 .attr("d", d3.geoPath()
                     .projection(projection)
