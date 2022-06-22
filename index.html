@@ -7,8 +7,9 @@
 </head>
 
 <body>
-    <svg></svg>
+    <div class="map"><svg></svg></div>
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3-legend/2.25.6/d3-legend.js"></script>
 
     <script>
 
@@ -27,15 +28,19 @@
             .translate([width / 2, height / 2]);
 
         // Load external data
-        Promise.all([d3.json("sgmap.json"), d3.csv("population2021.csv", function (loaddata) {
-            map.set(loaddata.Subzone, loaddata.Population)})]).then(data => {
+        Promise.all([d3.json("sgmap.json"), d3.csv("population2021.csv")]).then(data => {
 
-            console.log(data[0]);
-            console.log(data[1]);
+            //console.log(data[0]);
+            //console.log(data[1]);
+
+            var popData = {}
+            for (let i = 0; i < data[1].length; i++) {
+                popData[data[1][i].Subzone.toUpperCase()] = data[1][i].Population
+            }
 
             //Color scale
             const colorScale = d3.scaleThreshold()
-                .domain([100000, 1000000, 10000000, 30000000, 100000000, 500000000, 50000000000])
+                .domain([500, 1000, 5000, 8000, 10000, 15000, 20000])
                 .range(d3.schemeBlues[7]);
 
             // Map and projection
@@ -46,8 +51,8 @@
             let geopath = d3.geoPath().projection(projection);
 
             // create a tooltip
-            var Tooltip = d3.select("#svg")
-                .data(data)
+            var Tooltip = d3.select(".map")
+                //.data(data)
                 .append("div")
                 .style("opacity", 0)
                 .attr("class", "tooltip")
@@ -58,15 +63,9 @@
                 .style("padding", "5px")
 
             let mouseOver = function (event, d) {
-                d3.selectAll(".Population")
-                    .transition()
-                    .duration(200)
-                    .style("opacity", .5)
-                d3.select(this)
-                    .transition()
-                    .duration(200)
-                    .style("opacity", 1)
-                    .style("stroke", "black")
+                Tooltip
+                        .html(d.properties["Name"] +" " + popData[d.properties["Name"]])
+                        .style("opacity", 1)
             }
 
             const mousemove = function (event, d) {
@@ -75,19 +74,15 @@
                     .style("left", (d3.pointer(this)[0] + 90) + "px")
                     .style("top", (d3.pointer(this)[1]) + "px")
                 d3.select(this)
-                    .style("stroke", "black")
+                    .style("stroke", "red")
                     .style("opacity", 1)
             }
 
             let mouseLeave = function (d) {
-                d3.selectAll(".Population")
-                    .transition()
-                    .duration(100)
-                    .style("opacity", .0)
                 d3.select(this)
                     .transition()
                     .duration(10)
-                    .style("stroke", "red")
+                    .style("stroke", "lightblue")
                     .style("opacity", .8)
             }
 
@@ -100,17 +95,25 @@
                 .attr("d", geopath)
                 // set the color of each country
                 .attr("fill", function (loaddata) {
-                    loaddata.total = map.get(loaddata.properties.Name) || 0;
-                    return colorScale(loaddata.total);
+                    return colorScale(popData[loaddata.properties["Name"]]);
                 })
-                .style("stroke", "transparent")
+                .style("stroke", "lightblue")
                 .attr("class", function (d) { return "Population" })
-                .style("opacity", .8)
                 .on("mouseover", mouseOver)
                 .on("mousemove", mousemove)
                 .on("mouseleave", mouseLeave)
-        })
 
+            var legend = d3.legendColor()
+                .labels([500, 1000, 5000, 8000, 10000, 15000, 20000])
+                .scale(colorScale)
+                .title("Population");
+
+            legend = svg.append("g")
+                .attr("class", "legend")
+                .attr("transform", "translate(50,30)")
+                .style("font-size", "12px")
+                .call(legend);
+        })
     </script>
 
 </body>
